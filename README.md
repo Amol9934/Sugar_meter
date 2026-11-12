@@ -104,6 +104,7 @@ All routes are under `/api`; everything except register/login needs the session 
 | PUT | `/readings/:id` | replace a reading |
 | DELETE | `/readings/:id` | delete a reading |
 | GET | `/reports?date=YYYY-MM-DD` | daily + month-to-date + previous month relative to `date` (default: today) |
+| GET | `/reports/summary?days=30&date=YYYY-MM-DD` | printable visit summary for 7, 14, 30, or 90 days with slot aggregates, previous-period changes, and daily consistency |
 
 Slots: `morning_fasting`, `after_breakfast`, `after_lunch`, `after_dinner`.
 Errors always look like `{ "error": { "code", "message", "field" } }`; `message` is safe to show to users.
@@ -123,6 +124,7 @@ Errors always look like `{ "error": { "code", "message", "field" } }`; `message`
 - **Authorization:** every query filters on `user_id`. Someone else's reading id returns 404, not 403, so ids can't be probed.
 - **Layering:** pure rules (`lib/readingRules.js`, `lib/dates.js`) are separate from HTTP and SQL, so the logic that matters is unit tested without a server.
 - **UI:** the day is shown as a four-row logbook (the paper diary patients already know). Slots already logged are disabled in the form.
+- **Visit summary report:** Designed as a doctor-facing, printable single-page A4 summary (`GET /api/reports/summary`) comparing the patient's selected window (7, 14, 30, or 90 days) against their immediately preceding period of equal length. Aggregates are computed entirely in PostgreSQL (`COUNT`, `MIN`, `MAX`, `ROUND(AVG(value)::numeric, 1)` and `generate_series` for full day coverage). Changes are presented neutrally without diagnostic commentary, and print stylesheets optimize for high-contrast, black-and-white printouts.
 
 ## Bonus tasks done
 
@@ -141,7 +143,7 @@ Pagination on `GET /readings` · Docker Compose for PostgreSQL · React Testing 
 4. Editing may change a reading's date and slot; the same rules apply as for creating.
 5. Report dates in the future are rejected. "Previous month" means the calendar month before the **selected** date's month.
 6. Emails are case-insensitive and unique. Registering an existing email says so (friendlier, but it reveals the account exists).
-7. I deliberately did **not** colour readings as "high/low". Clinical targets differ per patient and per doctor, and the brief doesn't ask for it.
+7. Clinical thresholds and 'high/low/good/bad' labels are intentionally omitted across the dashboard and visit summary: clinical targets vary per patient and doctor, so the application presents only self-recorded values compared against the patient's own history without offering medical diagnoses or advice.
 
 ### With more time
 - Per-user timezone; refresh tokens / server-side session revocation; email verification and password reset.
