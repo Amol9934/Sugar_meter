@@ -118,3 +118,4 @@ describe('Summary Page', () => {
     expect(screen.getAllByText('-').length).toBeGreaterThan(0);
   });
 });
+

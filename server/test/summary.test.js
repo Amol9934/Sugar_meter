@@ -203,3 +203,4 @@ describe('summary API', () => {
     assert.equal(res2.body.overall.average, 265);
   });
 });
+
