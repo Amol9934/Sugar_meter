@@ -51,6 +51,24 @@ message, one-reading-per-slot, the 4-per-day guard, five simultaneous identical 
 wins), edit/delete rules, per-user isolation, password hashing, httpOnly cookie, report numbers
 including rounding and boundary dates, empty ranges, and the form's client-side validation.
 
+## Install on your phone (PWA)
+
+Sweety is an installable Progressive Web App with an offline app shell, standalone display mode, and safe-area inset support for notched devices.
+
+### How to install
+- **Android (Chrome / Edge):** Open the app in Chrome or Edge, tap the menu (three dots), and select **Install app** or **Add to Home screen** (or click the in-app "Install app" button in the header).
+- **iOS (Safari):** Open the app in Safari, tap the **Share** button (box with upward arrow), scroll down, and tap **Add to Home Screen**.
+- **Desktop (Chrome / Edge):** Click the install icon in the browser address bar, or use the "Install app" button in the top bar.
+
+### Testing the PWA locally
+Service worker registration is active exclusively in production builds (`import.meta.env.PROD`) to prevent caching during active development.
+To test the PWA and service worker locally:
+```bash
+npm --prefix client run build
+npm --prefix client run preview
+```
+Open `http://localhost:4173` in Chrome or Edge. Inspect **DevTools > Application** to confirm the active service worker (`/sw.js`), web app manifest (`/manifest.webmanifest`), and cache storage (`sweety-shell-v1`). Network inspection confirms `/api/*` requests bypass the service worker cache.
+
 ## Performance
 
 ### What was changed
@@ -144,6 +162,7 @@ Pagination on `GET /readings` · Docker Compose for PostgreSQL · React Testing 
 5. Report dates in the future are rejected. "Previous month" means the calendar month before the **selected** date's month.
 6. Emails are case-insensitive and unique. Registering an existing email says so (friendlier, but it reveals the account exists).
 7. Clinical thresholds and 'high/low/good/bad' labels are intentionally omitted across the dashboard and visit summary: clinical targets vary per patient and doctor, so the application presents only self-recorded values compared against the patient's own history without offering medical diagnoses or advice.
+8. API responses are never cached by the service worker to ensure sensitive personal health data remains fresh and is never persisted in unencrypted client worker storage. Push notifications and offline write queues were left out because they require server-side scheduling and VAPID key infrastructure (planned next).
 
 ### With more time
 - Per-user timezone; refresh tokens / server-side session revocation; email verification and password reset.
