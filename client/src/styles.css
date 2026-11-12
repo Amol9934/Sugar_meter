@@ -174,6 +174,34 @@ button.link.danger { color: var(--danger); }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
+/* ---------- next reading card ---------- */
+.next-card {
+  background: var(--sheet);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 0 var(--line), 0 8px 24px -16px rgba(29, 26, 51, .25);
+}
+.next-card.all-done {
+  border-color: var(--line);
+  background: var(--sheet);
+}
+.next-card-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.next-card-text {
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+.next-card.all-done .next-card-text {
+  color: var(--muted);
+}
+
 /* ---------- visit summary ---------- */
 .summary-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem 2rem; flex-wrap: wrap; padding: 1.25rem 0 1.5rem; }
 .period-span { font-size: 0.85em; font-weight: 400; color: var(--muted); }

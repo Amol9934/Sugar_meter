@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext.jsx';
 import { addDays, formatLong, greeting, localToday } from '../lib/dates.js';
 import { slotLabel, SLOTS } from '../lib/slots.js';
 import Logbook from '../components/Logbook.jsx';
+import NextReadingCard from '../components/NextReadingCard.jsx';
 import ReadingForm from '../components/ReadingForm.jsx';
 import ReportTable, { NumbersSkeleton } from '../components/ReportTable.jsx';
 import { DropMark, ChevronLeft, ChevronRight } from '../components/Icons.jsx';
@@ -112,6 +113,16 @@ export default function Dashboard() {
           {!isToday && <button className="ghost small" onClick={() => changeDate(today)}>Today</button>}
         </div>
       </section>
+
+      {isToday && (
+        <NextReadingCard
+          loggedSlots={takenSlots}
+          onLog={(slot) => {
+            setEditing(null);
+            setPresetSlot(slot);
+          }}
+        />
+      )}
 
       <main className="layout">
         <section className="sheet" aria-label="Daily log">
