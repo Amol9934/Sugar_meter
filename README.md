@@ -26,9 +26,12 @@ cp server/.env.example server/.env     # then set JWT_SECRET (see the file for a
 npm run migrate
 npm run seed                            # demo user: demo@sweety.app / Demo@1234
 
-# 5. Run (two terminals)
+# 5. Run in development (two terminals)
 npm run dev:server                      # API  -> http://localhost:4000
 npm run dev:client                      # App  -> http://localhost:5173
+
+# 6. Run in production (builds client, then starts server)
+npm run start:prod                      # App + API -> http://localhost:4000
 ```
 
 ## Tests
