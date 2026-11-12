@@ -40,3 +40,26 @@ export function previousMonthRange(date) {
   const lastDay = new Date(Date.UTC(y, m - 1, 0)).getUTCDate();
   return { from: fmt(prevY, prevM, 1), to: fmt(prevY, prevM, lastDay) };
 }
+
+/** Calendar arithmetic in UTC so daylight-saving shifts can never move a date. */
+export function addDays(iso, n) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+
+/** Exactly `days` days ending on `endDate` inclusive. */
+export function rollingRange(endDate, days) {
+  return {
+    from: addDays(endDate, -(days - 1)),
+    to: endDate,
+  };
+}
+
+/** Exactly `days` days immediately preceding `rollingRange(endDate, days)`. */
+export function previousRollingRange(endDate, days) {
+  const current = rollingRange(endDate, days);
+  return {
+    from: addDays(current.from, -days),
+    to: addDays(current.from, -1),
+  };
+}

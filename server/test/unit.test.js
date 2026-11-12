@@ -1,6 +1,13 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { isValidIsoDate, monthToDateRange, previousMonthRange, todayIn } from '../src/lib/dates.js';
+import {
+  isValidIsoDate,
+  monthToDateRange,
+  previousMonthRange,
+  todayIn,
+  rollingRange,
+  previousRollingRange,
+} from '../src/lib/dates.js';
 import { validateReadingInput, assertCanStore, MESSAGES } from '../src/lib/readingRules.js';
 
 const TODAY = '2026-10-15';
@@ -45,6 +52,27 @@ describe('date ranges', () => {
     const instant = new Date('2026-10-15T20:00:00Z');
     assert.equal(todayIn('Asia/Kolkata', instant), '2026-10-16');
     assert.equal(todayIn('America/Los_Angeles', instant), '2026-10-15');
+  });
+
+  test('rollingRange covers exactly N days inclusive ending on endDate', () => {
+    assert.deepEqual(rollingRange('2026-11-12', 30), { from: '2026-10-14', to: '2026-11-12' });
+    assert.deepEqual(rollingRange('2026-11-12', 7), { from: '2026-11-06', to: '2026-11-12' });
+    assert.deepEqual(rollingRange('2026-11-12', 14), { from: '2026-10-30', to: '2026-11-12' });
+    assert.deepEqual(rollingRange('2026-11-12', 90), { from: '2026-08-15', to: '2026-11-12' });
+  });
+
+  test('rollingRange handles leap year and year boundaries', () => {
+    // 2024 is a leap year (February has 29 days)
+    assert.deepEqual(rollingRange('2024-03-05', 7), { from: '2024-02-28', to: '2024-03-05' });
+    // Year boundary
+    assert.deepEqual(rollingRange('2025-01-05', 14), { from: '2024-12-23', to: '2025-01-05' });
+  });
+
+  test('previousRollingRange covers N days immediately preceding rollingRange', () => {
+    assert.deepEqual(previousRollingRange('2026-11-12', 30), { from: '2026-09-14', to: '2026-10-13' });
+    assert.deepEqual(previousRollingRange('2026-11-12', 7), { from: '2026-10-30', to: '2026-11-05' });
+    assert.deepEqual(previousRollingRange('2024-03-05', 7), { from: '2024-02-21', to: '2024-02-27' });
+    assert.deepEqual(previousRollingRange('2025-01-05', 14), { from: '2024-12-09', to: '2024-12-22' });
   });
 });
 
