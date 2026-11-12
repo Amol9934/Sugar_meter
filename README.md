@@ -51,6 +51,44 @@ message, one-reading-per-slot, the 4-per-day guard, five simultaneous identical 
 wins), edit/delete rules, per-user isolation, password hashing, httpOnly cookie, report numbers
 including rounding and boundary dates, empty ranges, and the form's client-side validation.
 
+## Performance
+
+### What was changed
+1. **Self-hosted typography:** Replaced third-party Google Fonts requests (`fonts.googleapis.com` and `fonts.gstatic.com`) with `@fontsource/atkinson-hyperlegible` (Latin 400 and 700). Preloaded the regular woff2 font in `index.html` with `font-display: swap` to eliminate render-blocking external network requests.
+2. **Production server integration & compression:** Configured Express in production (`NODE_ENV=production`) to serve `client/dist` with `compression` (gzip/brotli), immutable 1-year caching for hashed static assets (`/assets/*`), `no-cache` for `index.html`, and SPA routing fallback for non-API GET requests. Added `npm run start:prod` root script.
+3. **Vendor chunk splitting:** Configured Rollup/Rolldown manual chunk splitting in `vite.config.js` to isolate React, React DOM, and React Router into a dedicated `vendor` chunk (`~80 kB` gzip). Reduced first-paint application bundle (`index.js`) from `262 kB` down to `5.4 kB` (`2.27 kB` gzip). Login route loads only minimal necessary assets.
+4. **Layout stability & query deduplication:** Added min-height reserving and matched header structure in `NumbersSkeleton` to maintain layout stability during report loading (`CLS: 0`). Deduplicated in-flight report queries and added date-change checks to eliminate duplicate requests under `React.StrictMode` without third-party query libraries.
+5. **SEO & meta hygiene:** Added valid `/robots.txt` in `client/public` and verified `<title>`, meta description, and `lang="en"` tags on all routes.
+
+### Measured results
+
+#### Build asset sizes (`client/dist`)
+| File | Baseline (Raw / Gzip) | Post-Optimization (Raw / Gzip) |
+| --- | --- | --- |
+| `index.html` | 1.06 kB / 0.52 kB | 1.11 kB / 0.54 kB |
+| `index.css` | 8.77 kB / 2.63 kB | 9.33 kB / 2.79 kB |
+| `index.js` (App entry) | 262.47 kB / 82.66 kB | 5.40 kB / 2.27 kB |
+| `vendor.js` (React, Router) | *Not split* | 256.80 kB / 80.58 kB |
+| `Dashboard.js` | 10.23 kB / 3.51 kB | 10.59 kB / 3.67 kB |
+| `AuthPage.js` | 2.16 kB / 0.92 kB | 2.34 kB / 1.00 kB |
+| `Icons.js` | 1.54 kB / 0.70 kB | 1.54 kB / 0.70 kB |
+| Self-hosted Fonts (woff2 400/700) | *Loaded from Google CDN* | 17.20 kB + 17.52 kB |
+| `robots.txt` | *Missing* | 0.02 kB / 0.04 kB |
+
+#### Lighthouse scores (Mobile, Incognito, Production Build)
+| Metric / Category | Baseline | Post-Optimization |
+| --- | --- | --- |
+| **Performance** | **96** | **99** |
+| **Accessibility** | **100** | **100** |
+| **Best Practices** | **96** | **96** *(401 auth probe logged by browser)* |
+| **SEO** | **91** | **100** |
+| First Contentful Paint (FCP) | 1.7 s | 0.8 s (-53%) |
+| Largest Contentful Paint (LCP) | 2.5 s | 1.9 s (-24%) |
+| Total Blocking Time (TBT) | 10 ms | 0 ms |
+| Cumulative Layout Shift (CLS) | 0 | 0 |
+| Speed Index | 1.7 s | 0.8 s (-53%) |
+| Google Fonts Requests | 2 requests | 0 requests |
+
 ## API
 
 All routes are under `/api`; everything except register/login needs the session cookie.
