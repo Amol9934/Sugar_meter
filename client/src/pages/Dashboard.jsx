@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { addDays, formatLong, greeting, localToday } from '../lib/dates.js';
 import { slotLabel, SLOTS } from '../lib/slots.js';
+import { currentStreak } from '../lib/streak.js';
 import Logbook from '../components/Logbook.jsx';
 import NextReadingCard from '../components/NextReadingCard.jsx';
 import ReadingForm from '../components/ReadingForm.jsx';
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [loadError, setLoadError] = useState(null);
   const [editing, setEditing] = useState(null);
   const [presetSlot, setPresetSlot] = useState('');
+  const [streak, setStreak] = useState(0);
   const [notice, setNotice] = useState(null);
   const noticeTimer = useRef();
   const lastFetchedDateRef = useRef(null);
@@ -38,6 +40,22 @@ export default function Dashboard() {
       }
     }
   }, [date, logout]);
+
+  useEffect(() => {
+    let ignore = false;
+    api.summary(90)
+      .then((data) => {
+        if (ignore || !data?.daily) return;
+        const loggedDates = data.daily.filter((d) => d.count > 0).map((d) => d.date);
+        setStreak(currentStreak(loggedDates, today));
+      })
+      .catch(() => {
+        // Failure to load the streak must never break the page.
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [today]);
 
   useEffect(() => {
     if (lastFetchedDateRef.current === date) return;
@@ -105,6 +123,7 @@ export default function Dashboard() {
         <div>
           <h1 className="headline">{isToday ? `${greeting(new Date().getHours())}, ${firstName}` : formatLong(date)}</h1>
           <p className="subline">{isToday ? formatLong(date) : 'You are viewing a past day.'}</p>
+          {streak > 0 && <p className="streak-line">{streak} {streak === 1 ? 'day' : 'days'} in a row</p>}
         </div>
         <div className="daynav">
           <button className="icon-btn" onClick={() => changeDate(addDays(date, -1))} aria-label="Previous day"><ChevronLeft /></button>
