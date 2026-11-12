@@ -42,7 +42,10 @@ export default function Dashboard() {
     lastFetchedDateRef.current = date;
     load(date);
   }, [date, load]);
-  useEffect(() => () => clearTimeout(noticeTimer.current), []);
+  useEffect(() => {
+    document.title = 'Sweety – Blood Glucose Tracker';
+    return () => clearTimeout(noticeTimer.current);
+  }, []);
 
   function flash(message) {
     setNotice(message);

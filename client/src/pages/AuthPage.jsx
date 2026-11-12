@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
 import { DropMark } from '../components/Icons.jsx';
@@ -9,6 +9,10 @@ export default function AuthPage({ mode }) {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    document.title = isSignup ? 'Sweety – Create account' : 'Sweety – Log in';
+  }, [isSignup]);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
