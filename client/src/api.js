@@ -29,12 +29,23 @@ async function request(path, { method = 'GET', body } = {}) {
   return data;
 }
 
+const inFlightReports = new Map();
+
 export const api = {
   me: () => request('/auth/me'),
   register: (b) => request('/auth/register', { method: 'POST', body: b }),
   login: (b) => request('/auth/login', { method: 'POST', body: b }),
   logout: () => request('/auth/logout', { method: 'POST' }),
-  report: (date) => request(`/reports?date=${date}`),
+  report: (date, force = false) => {
+    if (!force && inFlightReports.has(date)) {
+      return inFlightReports.get(date);
+    }
+    const promise = request(`/reports?date=${date}`).finally(() => {
+      inFlightReports.delete(date);
+    });
+    inFlightReports.set(date, promise);
+    return promise;
+  },
   createReading: (b) => request('/readings', { method: 'POST', body: b }),
   updateReading: (id, b) => request(`/readings/${id}`, { method: 'PUT', body: b }),
   deleteReading: (id) => request(`/readings/${id}`, { method: 'DELETE' }),

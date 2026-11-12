@@ -139,7 +139,7 @@ button.link.danger { color: var(--danger); }
 }
 
 /* ---------- numbers panel: the one dark surface ---------- */
-.numbers { background: var(--panel); color: var(--panel-ink); border-radius: var(--radius); padding: 1.5rem; }
+.numbers { background: var(--panel); color: var(--panel-ink); border-radius: var(--radius); padding: 1.5rem; min-height: 22.5rem; }
 .numbers h2 { font-size: 1.3rem; }
 .numbers-unit { color: var(--panel-muted); font-size: .88rem; margin: .15rem 0 1rem; }
 .numbers table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
@@ -154,7 +154,7 @@ button.link.danger { color: var(--danger); }
 .numbers td:nth-child(4) { color: #ff9fbd; } /* the average is the number people look for first */
 
 @media (max-width: 36rem) {
-  .numbers { padding: 1.25rem; }
+  .numbers { padding: 1.25rem; min-height: 25.5rem; }
   .numbers thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .numbers tbody tr { display: grid; grid-template-columns: repeat(4, 1fr); padding: .9rem 0; }
   .numbers tbody th { grid-column: 1 / -1; padding: 0 0 .5rem; }

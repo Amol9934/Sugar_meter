@@ -45,6 +45,7 @@ export function NumbersSkeleton() {
   return (
     <section className="numbers" aria-busy="true" aria-label="Loading your numbers">
       <h2>Your numbers</h2>
+      <p className="numbers-unit">Glucose in mg/dl</p>
       <div className="skeleton" /><div className="skeleton" /><div className="skeleton" />
     </section>
   );

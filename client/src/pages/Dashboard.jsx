@@ -18,18 +18,30 @@ export default function Dashboard() {
   const [presetSlot, setPresetSlot] = useState('');
   const [notice, setNotice] = useState(null);
   const noticeTimer = useRef();
+  const lastFetchedDateRef = useRef(null);
+  const activeDateRef = useRef(date);
+  activeDateRef.current = date;
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (targetDate = date, force = false) => {
     setLoadError(null);
     try {
-      setReport(await api.report(date));
+      const data = await api.report(targetDate, force);
+      if (activeDateRef.current === targetDate) {
+        setReport(data);
+      }
     } catch (err) {
-      if (err.status === 401) return logout(); // session expired
-      setLoadError(err.message);
+      if (activeDateRef.current === targetDate) {
+        if (err.status === 401) return logout(); // session expired
+        setLoadError(err.message);
+      }
     }
   }, [date, logout]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (lastFetchedDateRef.current === date) return;
+    lastFetchedDateRef.current = date;
+    load(date);
+  }, [date, load]);
   useEffect(() => () => clearTimeout(noticeTimer.current), []);
 
   function flash(message) {
@@ -40,7 +52,7 @@ export default function Dashboard() {
 
   // Changing the day cancels any edit in progress, since an edit belongs to one day.
   function changeDate(next) {
-    if (!next || next > today) return;
+    if (!next || next > today || next === date) return;
     setDate(next);
     setEditing(null);
     setPresetSlot('');
@@ -52,7 +64,7 @@ export default function Dashboard() {
     else await api.createReading(payload);
     setEditing(null);
     setPresetSlot('');
-    await load();
+    await load(date, true);
     flash(`${slotLabel(payload.slot)}: ${payload.value} mg/dl ${wasEditing ? 'updated' : 'saved'}`);
   }
 
@@ -60,7 +72,7 @@ export default function Dashboard() {
     try {
       await api.deleteReading(r.id);
       if (editing?.id === r.id) setEditing(null);
-      await load();
+      await load(date, true);
       flash(`${slotLabel(r.slot)} reading deleted`);
     } catch (err) {
       setLoadError(err.message);
