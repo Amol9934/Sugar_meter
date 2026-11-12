@@ -46,6 +46,7 @@ export const api = {
     inFlightReports.set(date, promise);
     return promise;
   },
+  summary: (days = 30, date) => request(`/reports/summary?days=${days}${date ? `&date=${date}` : ''}`),
   createReading: (b) => request('/readings', { method: 'POST', body: b }),
   updateReading: (id, b) => request(`/readings/${id}`, { method: 'PUT', body: b }),
   deleteReading: (id) => request(`/readings/${id}`, { method: 'DELETE' }),

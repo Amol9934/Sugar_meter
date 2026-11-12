@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { addDays, formatLong, greeting, localToday } from '../lib/dates.js';
@@ -94,6 +95,7 @@ export default function Dashboard() {
         <div className="brand"><DropMark /> <span>Sweety</span></div>
         <div className="who">
           <span className="who-name">{user.name}</span>
+          <Link to="/summary" className="ghost small">Visit summary</Link>
           <button className="ghost small" onClick={logout}>Log out</button>
         </div>
       </header>

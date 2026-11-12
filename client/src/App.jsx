@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext.jsx';
 // Each screen is its own chunk, so the login page doesn't download the dashboard code (and vice versa).
 const AuthPage = lazy(() => import('./pages/AuthPage.jsx'));
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
+const Summary = lazy(() => import('./pages/Summary.jsx'));
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -24,6 +25,7 @@ export default function App() {
       <Route path="/login" element={<GuestOnly><AuthPage mode="login" /></GuestOnly>} />
       <Route path="/signup" element={<GuestOnly><AuthPage mode="signup" /></GuestOnly>} />
       <Route path="/" element={<Protected><Dashboard /></Protected>} />
+      <Route path="/summary" element={<Protected><Summary /></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </Suspense>
