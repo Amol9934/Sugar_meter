@@ -23,7 +23,11 @@ export default function ReadingForm({ date, today, editing, presetSlot, takenSlo
     // Clicking Add/Edit in the logbook should land the cursor in the value box, ready to type.
     if (editing || presetSlot) {
       valueRef.current?.focus();
-      valueRef.current?.scrollIntoView?.({ block: 'nearest' });
+      const prefersReduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      valueRef.current?.scrollIntoView?.({
+        behavior: prefersReduced ? 'auto' : 'smooth',
+        block: 'nearest',
+      });
     }
   }, [editing, presetSlot]);
 

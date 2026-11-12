@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [editing, setEditing] = useState(null);
   const [presetSlot, setPresetSlot] = useState('');
   const [streak, setStreak] = useState(0);
+  const [installPrompt, setInstallPrompt] = useState(null);
   const [notice, setNotice] = useState(null);
   const noticeTimer = useRef();
   const lastFetchedDateRef = useRef(null);
@@ -36,10 +37,45 @@ export default function Dashboard() {
     } catch (err) {
       if (activeDateRef.current === targetDate) {
         if (err.status === 401) return logout(); // session expired
-        setLoadError(err.message);
+        if (!navigator.onLine || err.message?.includes('Cannot reach the server')) {
+          setLoadError("You're offline. Your readings will appear when you're back online.");
+        } else {
+          setLoadError(err.message);
+        }
       }
     }
   }, [date, logout]);
+
+  useEffect(() => {
+    function handleOnline() {
+      load(activeDateRef.current, true);
+    }
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [load]);
+
+  useEffect(() => {
+    function handleBeforeInstallPrompt(e) {
+      e.preventDefault();
+      setInstallPrompt(e);
+    }
+    function handleAppInstalled() {
+      setInstallPrompt(null);
+    }
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  async function installApp() {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice.catch(() => {});
+    setInstallPrompt(null);
+  }
 
   useEffect(() => {
     let ignore = false;
@@ -114,6 +150,11 @@ export default function Dashboard() {
         <div className="brand"><DropMark /> <span>Sweety</span></div>
         <div className="who">
           <span className="who-name">{user.name}</span>
+          {installPrompt && (
+            <button type="button" className="ghost small install-btn" onClick={installApp}>
+              Install app
+            </button>
+          )}
           <Link to="/summary" className="ghost small">Visit summary</Link>
           <button className="ghost small" onClick={logout}>Log out</button>
         </div>

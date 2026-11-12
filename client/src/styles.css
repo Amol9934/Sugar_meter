@@ -80,7 +80,12 @@ button.link.danger { color: var(--danger); }
 
 /* ---------- shell ---------- */
 .shell { max-width: 66rem; margin: 0 auto; padding: 0 1.25rem 4rem; }
-.topbar { display: flex; justify-content: space-between; align-items: center; padding: 1.1rem 0 .5rem; }
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: max(1.1rem, env(safe-area-inset-top, 1.1rem)) max(0rem, env(safe-area-inset-right, 0rem)) .5rem max(0rem, env(safe-area-inset-left, 0rem));
+}
 .who { display: flex; gap: .75rem; align-items: center; }
 .who-name { color: var(--muted); }
 @media (max-width: 34rem) { .who-name { display: none; } }
