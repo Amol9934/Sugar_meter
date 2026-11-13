@@ -320,7 +320,7 @@ button.link.danger { color: var(--danger); }
     color: #000000 !important;
     font-size: 10pt;
   }
-  .topbar, .summary-controls, .print-btn, .toast-region {
+  .topbar, .summary-controls, .print-btn, .export-btn, .toast-region {
     display: none !important;
   }
   .shell {

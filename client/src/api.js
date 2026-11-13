@@ -51,4 +51,49 @@ export const api = {
   createReading: (b) => request('/readings', { method: 'POST', body: b }),
   updateReading: (id, b) => request(`/readings/${id}`, { method: 'PUT', body: b }),
   deleteReading: (id) => request(`/readings/${id}`, { method: 'DELETE' }),
+  downloadCsv: async ({ from, to } = {}) => {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const qs = params.toString();
+    const url = `/api/readings/export.csv${qs ? `?${qs}` : ''}`;
+    let res;
+    try {
+      res = await fetch(url, {
+        method: 'GET',
+        credentials: 'same-origin',
+      });
+    } catch {
+      throw new ApiError('Cannot reach the server. Check your connection and try again.');
+    }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new ApiError(data.error?.message ?? 'Failed to export CSV.', {
+        status: res.status,
+        field: data.error?.field,
+      });
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get('Content-Disposition');
+    let filename = `sweety-readings${from && to ? `-${from}-${to}` : ''}.csv`;
+    if (disposition && disposition.includes('filename=')) {
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      if (match && match[1]) filename = match[1];
+    }
+    const blobUrl = typeof window !== 'undefined' && typeof window.URL?.createObjectURL === 'function'
+      ? window.URL.createObjectURL(blob)
+      : '';
+    if (typeof document !== 'undefined') {
+      const a = document.createElement('a');
+      a.href = blobUrl || `data:text/csv;charset=utf-8,${encodeURIComponent(await blob.text())}`;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      if (blobUrl && typeof window.URL?.revokeObjectURL === 'function') {
+        window.URL.revokeObjectURL(blobUrl);
+      }
+    }
+    return filename;
+  },
 };

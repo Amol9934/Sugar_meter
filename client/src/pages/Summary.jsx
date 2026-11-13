@@ -31,6 +31,8 @@ export default function Summary() {
   const [trendLoading, setTrendLoading] = useState(true);
   const [error, setError] = useState(null);
   const [trendError, setTrendError] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState(null);
 
   useEffect(() => {
     document.title = 'Visit summary – Sweety';
@@ -76,6 +78,19 @@ export default function Summary() {
     };
   }, [days]);
 
+  async function handleExportCsv() {
+    setExporting(true);
+    setExportError(null);
+    try {
+      const range = summary?.range ? { from: summary.range.from, to: summary.range.to } : {};
+      await api.downloadCsv(range);
+    } catch (err) {
+      setExportError(err.message || 'Unable to export CSV. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const isEmpty = summary && summary.overall.count === 0;
 
   return (
@@ -84,6 +99,15 @@ export default function Summary() {
         <div className="brand"><DropMark /> <span>Sweety</span></div>
         <div className="who">
           <Link to="/" className="ghost small">Back to Dashboard</Link>
+          <button
+            type="button"
+            className="ghost small export-btn"
+            onClick={handleExportCsv}
+            disabled={exporting}
+            aria-busy={exporting}
+          >
+            {exporting ? 'Exporting…' : 'Export CSV'}
+          </button>
           <button type="button" className="ghost small print-btn" onClick={() => window.print()}>
             Print / Save as PDF
           </button>
@@ -117,6 +141,7 @@ export default function Summary() {
 
       {loading && <p className="center-note">Loading visit summary…</p>}
       {error && <p className="center-note form-error">{error}</p>}
+      {exportError && <p className="center-note form-error" role="alert">{exportError}</p>}
 
       {!loading && !error && isEmpty && (
         <section className="summary-sheet empty-summary">
