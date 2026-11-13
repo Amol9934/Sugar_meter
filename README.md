@@ -125,6 +125,8 @@ All routes are under `/api`; everything except register/login needs the session 
 | DELETE | `/readings/:id` | delete a reading |
 | GET | `/reports?date=YYYY-MM-DD` | daily + month-to-date + previous month relative to `date` (default: today) |
 | GET | `/reports/summary?days=30&date=YYYY-MM-DD` | printable visit summary for 7, 14, 30, or 90 days with slot aggregates, previous-period changes, and daily consistency |
+| GET | `/reports/trend?days=30&date=YYYY-MM-DD` | daily slot glucose trend for inline SVG visualization across 7, 14, 30, or 90 days |
+| GET | `/readings/export.csv?from=YYYY-MM-DD&to=YYYY-MM-DD` | RFC 4180 CSV export of blood glucose readings with formula injection protection |
 
 Slots: `morning_fasting`, `after_breakfast`, `after_lunch`, `after_dinner`.
 Errors always look like `{ "error": { "code", "message", "field" } }`; `message` is safe to show to users.
@@ -145,6 +147,8 @@ Errors always look like `{ "error": { "code", "message", "field" } }`; `message`
 - **Layering:** pure rules (`lib/readingRules.js`, `lib/dates.js`) are separate from HTTP and SQL, so the logic that matters is unit tested without a server.
 - **UI:** the day is shown as a four-row logbook (the paper diary patients already know). Slots already logged are disabled in the form.
 - **Visit summary report:** Designed as a doctor-facing, printable single-page A4 summary (`GET /api/reports/summary`) comparing the patient's selected window (7, 14, 30, or 90 days) against their immediately preceding period of equal length. Aggregates are computed entirely in PostgreSQL (`COUNT`, `MIN`, `MAX`, `ROUND(AVG(value)::numeric, 1)` and `generate_series` for full day coverage). Changes are presented neutrally without diagnostic commentary, and print stylesheets optimize for high-contrast, black-and-white printouts.
+- **Trend chart (zero runtime dependencies):** Built with pure inline SVG (`TrendChart.jsx`) rather than an external charting library (e.g. Chart.js, Recharts) to keep bundle size minimal and avoid dependency bloat. Readings are projected per day and slot via PostgreSQL `generate_series` and SQL aggregates (`GET /api/reports/trend`). Polylines are broken into discrete segments so missing readings produce genuine visual gaps rather than false linear interpolation across null dates. Accessible by design: each slot is paired with a distinct high-contrast color AND a unique geometric marker shape (circle, square, triangle, diamond) for color-blind clarity, full dark mode integration via CSS variables, and an accessible visually-hidden HTML data table fallback (`role="img"` with descriptive `aria-label`).
+- **Secure CSV export:** Blood glucose readings can be exported via `GET /api/readings/export.csv?from=YYYY-MM-DD&to=YYYY-MM-DD` with standard RFC 4180 escaping (double-quote wrapping and quote doubling). To prevent CSV/spreadsheet formula injection vulnerabilities (CWE-1236), values starting with `=`, `+`, `-`, `@`, `\t`, or `\r` are neutralized by prefixing with `'`. Downloads trigger directly via session cookies with clear download headers.
 
 ## Bonus tasks done
 
@@ -168,10 +172,11 @@ Pagination on `GET /readings` · Docker Compose for PostgreSQL · React Testing 
 
 ### With more time
 - Per-user timezone; refresh tokens / server-side session revocation; email verification and password reset.
-- Charts of the month (Recharts), CSV/PDF export for doctor visits, and the doctor role (view assigned patients' reports).
+- Doctor role (view assigned patients' reports, leave doctor notes) and direct server-side PDF generation.
 - Redis cache for reports invalidated on write; BullMQ daily reminder for users with < 4 readings.
-- End-to-end tests (Playwright), CI pipeline (GitHub Actions running both suites against a Postgres service), and structured request logging.
-- Per-patient target ranges (set with their doctor) to highlight readings out of range.
+- Web Push notifications with VAPID keys for scheduled next-slot nudges.
+- End-to-end tests (Playwright) and structured JSON request logging.
+- Per-patient target ranges (set with their doctor) to highlight readings out of clinical range.
 
 ## Project layout
 
