@@ -263,3 +263,4 @@ export default function TrendChart({ trend, loading, error }) {
     </section>
   );
 }
+

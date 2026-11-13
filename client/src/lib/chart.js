@@ -114,3 +114,4 @@ export function getXAxisTicks(points, targetInterval = 7) {
 
   return ticks;
 }
+
