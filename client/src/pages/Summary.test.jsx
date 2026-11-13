@@ -118,5 +118,44 @@ describe('Summary Page', () => {
     expect(screen.getByText('-5')).toBeInTheDocument();
     expect(screen.getAllByText('-').length).toBeGreaterThan(0);
   });
+
+  test('triggers CSV download with current period range', async () => {
+    vi.spyOn(api, 'summary').mockResolvedValue(mockSummaryData);
+    const downloadSpy = vi.spyOn(api, 'downloadCsv').mockResolvedValue('sweety-readings-2026-10-14-2026-11-12.csv');
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <Summary />
+      </MemoryRouter>
+    );
+
+    const exportBtn = await screen.findByRole('button', { name: 'Export CSV' });
+    expect(exportBtn).toBeInTheDocument();
+
+    await user.click(exportBtn);
+
+    expect(downloadSpy).toHaveBeenCalledWith({
+      from: '2026-10-14',
+      to: '2026-11-12',
+    });
+  });
+
+  test('displays error notice when CSV export fails', async () => {
+    vi.spyOn(api, 'summary').mockResolvedValue(mockSummaryData);
+    vi.spyOn(api, 'downloadCsv').mockRejectedValue(new Error('Cannot reach the server.'));
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <Summary />
+      </MemoryRouter>
+    );
+
+    const exportBtn = await screen.findByRole('button', { name: 'Export CSV' });
+    await user.click(exportBtn);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Cannot reach the server.');
+  });
 });
 
