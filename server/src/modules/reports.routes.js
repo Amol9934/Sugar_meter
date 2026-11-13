@@ -125,6 +125,42 @@ reportsRouter.get('/summary', async (req, res) => {
   });
 });
 
+// GET /api/reports/trend?days=30&date=YYYY-MM-DD
+reportsRouter.get('/trend', async (req, res) => {
+  const today = todayIn(config.timezone);
+  const date = req.query.date ?? today;
+  if (!isValidIsoDate(date)) throw validationError(MESSAGES.dateInvalid, 'date');
+  if (date > today) throw validationError(MESSAGES.dateFuture, 'date');
+
+  const daysNum = Number(req.query.days);
+  if (!ALLOWED_DAYS.has(daysNum)) {
+    throw validationError('Choose 7, 14, 30 or 90 days.', 'days');
+  }
+
+  const range = rollingRange(date, daysNum);
+
+  const result = await query(
+    `SELECT to_char(d.day, 'YYYY-MM-DD') AS date,
+            MAX(CASE WHEN r.slot = 'morning_fasting' THEN r.value END)::int AS morning_fasting,
+            MAX(CASE WHEN r.slot = 'after_breakfast' THEN r.value END)::int AS after_breakfast,
+            MAX(CASE WHEN r.slot = 'after_lunch' THEN r.value END)::int AS after_lunch,
+            MAX(CASE WHEN r.slot = 'after_dinner' THEN r.value END)::int AS after_dinner
+       FROM generate_series($2::date, $3::date, '1 day'::interval) AS d(day)
+       LEFT JOIN readings r
+              ON r.reading_date = d.day::date
+             AND r.user_id = $1
+      GROUP BY d.day
+      ORDER BY d.day ASC`,
+    [req.userId, range.from, range.to]
+  );
+
+  res.json({
+    range,
+    days: daysNum,
+    points: result.rows,
+  });
+});
+
 /** Aggregates are computed by Postgres, not by pulling rows into JS. Empty range => count 0, rest null. */
 async function statsFor(userId, { from, to }) {
   const { rows } = await query(
