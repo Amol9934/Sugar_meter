@@ -17,6 +17,8 @@ const indexPath = path.join(clientDist, 'index.html');
 export function createApp() {
   const app = express();
   app.disable('x-powered-by');
+  // Vercel is a reverse proxy; needed for rate limiting and secure cookies
+  app.set('trust proxy', 1);
 
   if (config.isProd) {
     app.use(compression());
