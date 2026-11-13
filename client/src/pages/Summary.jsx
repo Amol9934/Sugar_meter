@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { DropMark } from '../components/Icons.jsx';
 import { formatDate, formatRange, localToday } from '../lib/dates.js';
 import { slotLabel } from '../lib/slots.js';
+
+const TrendChart = lazy(() => import('../components/TrendChart.jsx'));
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -24,8 +26,11 @@ export default function Summary() {
   const today = localToday();
   const [days, setDays] = useState(30);
   const [summary, setSummary] = useState(null);
+  const [trend, setTrend] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [trendLoading, setTrendLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [trendError, setTrendError] = useState(null);
 
   useEffect(() => {
     document.title = 'Visit summary – Sweety';
@@ -34,7 +39,10 @@ export default function Summary() {
   useEffect(() => {
     let ignore = false;
     setLoading(true);
+    setTrendLoading(true);
     setError(null);
+    setTrendError(null);
+
     api.summary(days)
       .then((data) => {
         if (!ignore) {
@@ -48,6 +56,21 @@ export default function Summary() {
           setLoading(false);
         }
       });
+
+    api.trend?.(days)
+      ?.then((data) => {
+        if (!ignore) {
+          setTrend(data);
+          setTrendLoading(false);
+        }
+      })
+      ?.catch((err) => {
+        if (!ignore) {
+          setTrendError(err.message);
+          setTrendLoading(false);
+        }
+      });
+
     return () => {
       ignore = true;
     };
@@ -104,71 +127,77 @@ export default function Summary() {
       )}
 
       {!loading && !error && summary && !isEmpty && (
-        <section className="summary-sheet">
-          <p className="summary-completeness">
-            Logged on {summary.daysLogged} of {summary.days} days - {summary.completeness}% of readings
-          </p>
+        <>
+          <section className="summary-sheet">
+            <p className="summary-completeness">
+              Logged on {summary.daysLogged} of {summary.days} days - {summary.completeness}% of readings
+            </p>
 
-          <div className="consistency-section">
-            <h2 className="consistency-title">Daily logging consistency</h2>
-            <div className="consistency-strip" role="group" aria-label="Daily consistency">
-              {summary.daily.map((d) => {
-                const label = `${formatDayLabel(d.date)}: ${d.count} of 4 readings`;
-                return (
-                  <div
-                    key={d.date}
-                    className={`strip-square shade-${Math.min(4, Math.max(0, d.count))}`}
-                    role="img"
-                    aria-label={label}
-                    title={label}
-                  />
-                );
-              })}
+            <div className="consistency-section">
+              <h2 className="consistency-title">Daily logging consistency</h2>
+              <div className="consistency-strip" role="group" aria-label="Daily consistency">
+                {summary.daily.map((d) => {
+                  const label = `${formatDayLabel(d.date)}: ${d.count} of 4 readings`;
+                  return (
+                    <div
+                      key={d.date}
+                      className={`strip-square shade-${Math.min(4, Math.max(0, d.count))}`}
+                      role="img"
+                      aria-label={label}
+                      title={label}
+                    />
+                  );
+                })}
+              </div>
+              <div className="strip-legend" aria-label="Consistency legend">
+                <span className="legend-label">0</span>
+                <span className="strip-square shade-0" aria-hidden="true" />
+                <span className="strip-square shade-1" aria-hidden="true" />
+                <span className="strip-square shade-2" aria-hidden="true" />
+                <span className="strip-square shade-3" aria-hidden="true" />
+                <span className="strip-square shade-4" aria-hidden="true" />
+                <span className="legend-label">4 readings/day</span>
+              </div>
             </div>
-            <div className="strip-legend" aria-label="Consistency legend">
-              <span className="legend-label">0</span>
-              <span className="strip-square shade-0" aria-hidden="true" />
-              <span className="strip-square shade-1" aria-hidden="true" />
-              <span className="strip-square shade-2" aria-hidden="true" />
-              <span className="strip-square shade-3" aria-hidden="true" />
-              <span className="strip-square shade-4" aria-hidden="true" />
-              <span className="legend-label">4 readings/day</span>
-            </div>
-          </div>
 
-          <table className="summary-table">
-            <thead>
-              <tr>
-                <th scope="col">Slot</th>
-                <th scope="col">Average</th>
-                <th scope="col">Lowest</th>
-                <th scope="col">Highest</th>
-                <th scope="col">Readings</th>
-                <th scope="col">vs previous {days} days</th>
-              </tr>
-            </thead>
-            <tbody>
-              {summary.slots.map((s) => (
-                <tr key={s.slot}>
-                  <th scope="row">{slotLabel(s.slot)}</th>
-                  <td>{s.count > 0 && s.average !== null ? s.average : '-'}</td>
-                  <td>{s.count > 0 && s.lowest !== null ? s.lowest : '-'}</td>
-                  <td>{s.count > 0 && s.highest !== null ? s.highest : '-'}</td>
-                  <td>{s.count}</td>
-                  <td>{formatChange(s.change)}</td>
+            <table className="summary-table">
+              <thead>
+                <tr>
+                  <th scope="col">Slot</th>
+                  <th scope="col">Average</th>
+                  <th scope="col">Lowest</th>
+                  <th scope="col">Highest</th>
+                  <th scope="col">Readings</th>
+                  <th scope="col">vs previous {days} days</th>
                 </tr>
-              ))}
-              <tr className="overall-row">
-                <th scope="row">Overall</th>
-                <td>{summary.overall.count > 0 && summary.overall.average !== null ? summary.overall.average : '-'}</td>
-                <td>{summary.overall.count > 0 && summary.overall.lowest !== null ? summary.overall.lowest : '-'}</td>
-                <td>{summary.overall.count > 0 && summary.overall.highest !== null ? summary.overall.highest : '-'}</td>
-                <td>{summary.overall.count}</td>
-                <td>-</td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
+              </thead>
+              <tbody>
+                {summary.slots.map((s) => (
+                  <tr key={s.slot}>
+                    <th scope="row">{slotLabel(s.slot)}</th>
+                    <td>{s.count > 0 && s.average !== null ? s.average : '-'}</td>
+                    <td>{s.count > 0 && s.lowest !== null ? s.lowest : '-'}</td>
+                    <td>{s.count > 0 && s.highest !== null ? s.highest : '-'}</td>
+                    <td>{s.count}</td>
+                    <td>{formatChange(s.change)}</td>
+                  </tr>
+                ))}
+                <tr className="overall-row">
+                  <th scope="row">Overall</th>
+                  <td>{summary.overall.count > 0 && summary.overall.average !== null ? summary.overall.average : '-'}</td>
+                  <td>{summary.overall.count > 0 && summary.overall.lowest !== null ? summary.overall.lowest : '-'}</td>
+                  <td>{summary.overall.count > 0 && summary.overall.highest !== null ? summary.overall.highest : '-'}</td>
+                  <td>{summary.overall.count}</td>
+                  <td>-</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <Suspense fallback={<div className="trend-card"><p className="center-note">Loading trend…</p></div>}>
+            <TrendChart trend={trend} loading={trendLoading} error={trendError} />
+          </Suspense>
+        </>
       )}
 
       <footer className="summary-footer">

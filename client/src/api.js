@@ -47,6 +47,7 @@ export const api = {
     return promise;
   },
   summary: (days = 30, date) => request(`/reports/summary?days=${days}${date ? `&date=${date}` : ''}`),
+  trend: (days = 30, date) => request(`/reports/trend?days=${days}${date ? `&date=${date}` : ''}`),
   createReading: (b) => request('/readings', { method: 'POST', body: b }),
   updateReading: (id, b) => request(`/readings/${id}`, { method: 'PUT', body: b }),
   deleteReading: (id) => request(`/readings/${id}`, { method: 'DELETE' }),
