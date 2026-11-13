@@ -1,5 +1,7 @@
 # Sweety – blood glucose tracker
 
+[![CI](https://github.com/revel/sweety/actions/workflows/ci.yml/badge.svg)](https://github.com/revel/sweety/actions/workflows/ci.yml)
+
 A small full-stack app where a diabetes patient records up to four blood glucose readings a day
 (morning fasting, after breakfast, after lunch, after dinner) and sees daily, month-to-date and
 previous-month reports.
