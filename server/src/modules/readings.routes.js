@@ -5,6 +5,8 @@ import { requireAuth } from '../middleware/auth.js';
 import { todayIn, isValidIsoDate } from '../lib/dates.js';
 import { validateReadingInput, assertCanStore, MESSAGES } from '../lib/readingRules.js';
 import { conflictError, notFound, validationError } from '../lib/errors.js';
+import { slotLabel } from '../lib/slots.js';
+import { formatCsv } from '../lib/csv.js';
 
 
 export const readingsRouter = Router();
@@ -77,6 +79,48 @@ readingsRouter.get('/', async (req, res) => {
 
   const total = count[0].total;
   res.json({ data: rows.map(toDto), page, limit, total, totalPages: Math.ceil(total / limit) });
+});
+
+// GET /api/readings/export.csv?from=YYYY-MM-DD&to=YYYY-MM-DD
+readingsRouter.get('/export.csv', async (req, res) => {
+  const { from, to } = req.query;
+
+  if (from !== undefined && !isValidIsoDate(from)) {
+    throw validationError(MESSAGES.dateInvalid, 'from');
+  }
+  if (to !== undefined && !isValidIsoDate(to)) {
+    throw validationError(MESSAGES.dateInvalid, 'to');
+  }
+  if (from && to && from > to) {
+    throw validationError("The 'from' date must be on or before the 'to' date.", 'from');
+  }
+
+  const { rows } = await query(
+    `SELECT to_char(reading_date, 'YYYY-MM-DD') AS reading_date, slot, value
+       FROM readings
+      WHERE user_id = $1
+        AND ($2::date IS NULL OR reading_date >= $2)
+        AND ($3::date IS NULL OR reading_date <= $3)
+      ORDER BY reading_date ASC,
+               CASE slot
+                 WHEN 'morning_fasting' THEN 1
+                 WHEN 'after_breakfast' THEN 2
+                 WHEN 'after_lunch' THEN 3
+                 WHEN 'after_dinner' THEN 4
+                 ELSE 5
+               END ASC`,
+    [req.userId, from ?? null, to ?? null]
+  );
+
+  const headers = ['date', 'slot', 'value'];
+  const dataRows = rows.map((r) => [r.reading_date, slotLabel(r.slot), r.value]);
+  const csvContent = formatCsv(dataRows, headers);
+
+  const filename = from && to ? `sweety-readings-${from}-${to}.csv` : 'sweety-readings.csv';
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(csvContent);
 });
 
 readingsRouter.post('/', async (req, res) => {
