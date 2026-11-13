@@ -51,6 +51,7 @@ const emptySummaryData = {
 describe('Summary Page', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.spyOn(api, 'trend').mockResolvedValue({ range: mockSummaryData.range, days: 30, points: [] });
   });
 
   test('renders rows for all 4 slots from a mocked API response', async () => {
