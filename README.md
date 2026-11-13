@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/Amol9934/Sugar_meter/actions/workflows/ci.yml/badge.svg)](https://github.com/Amol9934/Sugar_meter/actions/workflows/ci.yml)
 
+Live demo: (add link after deployment)
+
 A small full-stack app where a diabetes patient records up to four blood glucose readings a day
 (morning fasting, after breakfast, after lunch, after dinner) and sees daily, month-to-date and
 previous-month reports.
@@ -52,6 +54,40 @@ What is covered: date-range maths (month ends, leap years, January → December)
 message, one-reading-per-slot, the 4-per-day guard, five simultaneous identical requests (exactly one
 wins), edit/delete rules, per-user isolation, password hashing, httpOnly cookie, report numbers
 including rounding and boundary dates, empty ranges, and the form's client-side validation.
+
+## Deployment (Vercel + Neon)
+
+Sweety is configured for deployment on Vercel as two separate projects connected to a serverless Neon PostgreSQL database.
+
+### 1. Database Setup (Neon)
+1. Create a serverless PostgreSQL database on [Neon](https://neon.tech).
+2. Copy the **pooled** connection string (Neon's connection pooler handles serverless concurrency efficiently).
+3. From your local machine, run migrations and load initial seed data once against Neon:
+   ```bash
+   DATABASE_URL="<your-neon-pooled-connection-string>" npm run migrate
+   DATABASE_URL="<your-neon-pooled-connection-string>" npm run seed
+   ```
+
+### 2. Backend Project (`server`)
+1. In the Vercel dashboard, create a new project from this repository.
+2. Set the **Root Directory** to `server`.
+3. Configure the following Environment Variables:
+   - `DATABASE_URL`: Your Neon **pooled** connection string.
+   - `JWT_SECRET`: A secure random string of at least 32 characters (`node -e "console.log(crypto.randomBytes(48).toString('hex'))"`).
+   - `APP_TIMEZONE`: The patient's timezone (e.g. `Asia/Kolkata` or your local timezone).
+4. Deploy the project. Vercel runs the Express API as a serverless function (`server/api/index.js`) routed via `server/vercel.json`.
+5. Copy the assigned Vercel URL (e.g. `https://sweety-api.vercel.app`).
+
+### 3. Frontend Project (`client`)
+1. In `client/vercel.json`, replace `REPLACE-WITH-API-URL` with your deployed backend project host (e.g. `sweety-api`).
+2. Create a second Vercel project with **Root Directory** set to `client`.
+3. Vercel automatically detects Vite: build command `vite build` and output directory `dist`.
+4. Deploy the project.
+
+### Architecture Notes
+- **Why the client proxies `/api`:** `client/vercel.json` rewrites `/api/:path*` to the backend serverless URL. Because the browser communicates with the client's domain, the `httpOnly`, `SameSite=Lax` session cookie is treated as a first-party cookie. This eliminates third-party cookie restrictions, prevents CORS configuration issues, and guards against cookie blockage in modern browsers like Safari and Chrome.
+- **Serverless connection pooling:** In `server/src/db/pool.js`, the database pool size is capped at 3 in production (`config.isProd`) to avoid exhausting database connections across concurrently scaling serverless lambda functions.
+- **Cold starts:** On free-tier serverless functions, initial requests after inactivity may take a few seconds while the serverless container initializes and connects to the database pool.
 
 ## Install on your phone (PWA)
 
